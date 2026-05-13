@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MEMEBOT — Command Center</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--bg:#0a0a0f;--bg2:#111118;--bg3:#1a1a24;--bg4:#22222f;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--text:#e8e8f0;--muted:#6b6b80;--accent:#7c6af7;--green:#22d3a0;--red:#f75a5a;--amber:#f7a742;--blue:#4facf7;--pink:#f76ab4;--mono:'Space Mono',monospace;--sans:'DM Sans',sans-serif;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13px;min-height:100vh;}
+.shell{display:flex;height:100vh;overflow:hidden;}
+.sidebar{width:200px;min-width:200px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;}
+.logo{padding:20px 16px 16px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:13px;font-weight:700;}
+.logo span{color:var(--accent);}
+.logo-sub{font-size:10px;color:var(--muted);margin-top:3px;text-transform:uppercase;}
+.nav{flex:1;padding:8px 0;overflow-y:auto;}
+.nav-section{padding:12px 16px 4px;font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-weight:600;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;color:var(--muted);font-size:13px;transition:all .15s;border-left:2px solid transparent;}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,.03);}
+.nav-item.active{color:var(--text);background:rgba(124,106,247,.1);border-left-color:var(--accent);}
+.nav-badge{margin-left:auto;background:var(--accent);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;font-family:var(--mono);}
+.nav-badge.green{background:var(--green);color:#0a0a0f;}
+.nav-badge.amber{background:var(--amber);color:#0a0a0f;}
+.sidebar-footer{padding:12px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);}
+.status-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);margin-right:6px;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{height:52px;min-height:52px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;}
+.topbar-title{font-size:14px;font-weight:500;}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.content{flex:1;overflow-y:auto;padding:20px;}
+.page{display:none;}.page.active{display:block;}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.card-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600;}
+.metric{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px 16px;}
+.metric-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
+.metric-value{font-size:24px;font-weight:600;font-family:var(--mono);line-height:1;}
+.metric-sub{font-size:11px;color:var(--muted);margin-top:5px;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.grid-21{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:16px;}
+.tbl{width:100%;border-collapse:collapse;font-size:12px;}
+.tbl th{text-align:left;padding:6px 10px;color:var(--muted);font-size:10px;text-transform:uppercase;border-bottom:1px solid var(--border);font-weight:600;}
+.tbl td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:rgba(255,255,255,.02);}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--bg3);color:var(--text);transition:all .15s;font-family:var(--sans);}
+.btn:hover{background:var(--bg4);}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.btn.danger{background:rgba(247,90,90,.1);border-color:rgba(247,90,90,.3);color:var(--red);}
+.btn.success{background:rgba(34,211,160,.1);border-color:rgba(34,211,160,.3);color:var(--green);}
+.btn.sm{padding:4px 10px;font-size:11px;}
+.toggle{position:relative;width:36px;height:20px;background:var(--bg4);border-radius:10px;border:1px solid var(--border2);transition:background .2s;cursor:pointer;flex-shrink:0;}
+.toggle.on{background:var(--accent);border-color:var(--accent);}
+.toggle.green.on{background:var(--green);border-color:var(--green);}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--muted);transition:all .2s;}
+.toggle.on::after{left:18px;background:#fff;}
+.input{background:var(--bg3);border:1px solid var(--border2);color:var(--text);border-radius:6px;padding:7px 10px;font-size:12px;font-family:var(--sans);width:100%;outline:none;}
+.input:focus{border-color:var(--accent);}
+.input::placeholder{color:var(--muted);}
+.input-group{margin-bottom:12px;}
+.input-label{font-size:11px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em;display:block;}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-family:var(--mono);border:1px solid var(--border2);background:var(--bg3);color:var(--muted);}
+.chip.green{color:var(--green);border-color:rgba(34,211,160,.2);background:rgba(34,211,160,.05);}
+.chip.red{color:var(--red);border-color:rgba(247,90,90,.2);background:rgba(247,90,90,.05);}
+.chip.amber{color:var(--amber);border-color:rgba(247,167,66,.2);background:rgba(247,167,66,.05);}
+.chip.purple{color:var(--accent);border-color:rgba(124,106,247,.2);background:rgba(124,106,247,.05);}
+.tag{display:inline-flex;align-items:center;gap:4px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:11px;font-family:var(--mono);color:var(--muted);}
+.tag.buy{color:var(--green);border-color:rgba(34,211,160,.2);background:rgba(34,211,160,.05);}
+.tag.sell{color:var(--red);border-color:rgba(247,90,90,.2);}
+.tag.sim{color:var(--amber);border-color:rgba(247,167,66,.2);}
+.tag.live{color:var(--green);border-color:rgba(34,211,160,.2);}
+.tag.pump{color:var(--accent);border-color:rgba(124,106,247,.2);}
+.tag.bonk{color:var(--pink);border-color:rgba(247,106,180,.2);}
+.tag.bags{color:var(--blue);border-color:rgba(79,172,247,.2);}
+.sep{height:1px;background:var(--border);margin:16px 0;}
+.alert{padding:10px 14px;border-radius:6px;font-size:12px;display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.alert.info{background:rgba(79,172,247,.08);border:1px solid rgba(79,172,247,.2);color:var(--blue);}
+.alert.warn{background:rgba(247,167,66,.08);border:1px solid rgba(247,167,66,.2);color:var(--amber);}
+.row{display:flex;align-items:center;gap:10px;}
+.row.sb{justify-content:space-between;}
+.row.wrap{flex-wrap:wrap;}
+.ml-auto{margin-left:auto;}
+.mb8{margin-bottom:8px;}.mb12{margin-bottom:12px;}.mb16{margin-bottom:16px;}
+.mt8{margin-top:8px;}.mt12{margin-top:12px;}
+.mono{font-family:var(--mono);}
+.green{color:var(--green);}.red{color:var(--red);}.amber{color:var(--amber);}.muted{color:var(--muted);}.bold{font-weight:600;}
+.pbar{height:4px;background:var(--bg4);border-radius:2px;overflow:hidden;}
+.pbar-fill{height:100%;border-radius:2px;}
+.score-ring{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;font-family:var(--mono);font-size:11px;font-weight:700;border:2px solid;}
+.score-high{color:var(--green);border-color:var(--green);}
+.score-med{color:var(--amber);border-color:var(--amber);}
+.score-low{color:var(--red);border-color:var(--red);}
+.wallet-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:8px;}
+.wallet-addr{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:4px;}
+.acct-tag{display:inline-flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 10px;margin:3px;font-size:12px;cursor:pointer;}
+.acct-tag:hover{border-color:var(--red);color:var(--red);}
+.feed-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+.feed-item:last-child{border-bottom:none;}
+.feed-coin{width:30px;height:30px;border-radius:50%;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+input[type=range]{-webkit-appearance:none;width:100%;height:4px;border-radius:2px;background:var(--bg4);outline:none;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px;}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:12px 16px;font-size:12px;z-index:999;animation:slideIn .2s ease;}
+@keyframes slideIn{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+</style>
+</head>
+<body>
+<div class="shell">
+<div class="sidebar">
+  <div class="logo"><span>MEME</span>BOT<div class="logo-sub">Command Center v1.0</div></div>
+  <div class="nav">
+    <div class="nav-section">Overview</div>
+    <div class="nav-item active" onclick="nav('overview')"><i class="ti ti-layout-dashboard"></i> Overview</div>
+    <div class="nav-section">Bots</div>
+    <div class="nav-item" onclick="nav('deployer')"><i class="ti ti-rocket"></i> Deployer <span class="nav-badge green" id="badge-deployer">OFF</span></div>
+    <div class="nav-item" onclick="nav('trader')"><i class="ti ti-chart-candle"></i> Trader <span class="nav-badge amber" id="badge-trader">SIM</span></div>
+    <div class="nav-item" onclick="nav('monitor')"><i class="ti ti-brand-x"></i> X Monitor <span class="nav-badge" id="badge-monitor">0</span></div>
+    <div class="nav-section">Management</div>
+    <div class="nav-item" onclick="nav('wallets')"><i class="ti ti-wallet"></i> Wallets</div>
+    <div class="nav-item" onclick="nav('history')"><i class="ti ti-history"></i> History</div>
+    <div class="nav-item" onclick="nav('ai')"><i class="ti ti-brain"></i> AI Brain</div>
+    <div class="nav-item" onclick="nav('settings')"><i class="ti ti-settings"></i> Settings</div>
+  </div>
+  <div class="sidebar-footer"><div><span class="status-dot" id="rpc-dot"></span><span id="rpc-status">Connecting...</span></div><div style="margin-top:4px" id="mode-status">Simulation</div></div>
+</div>
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">Overview</div>
+    <div class="topbar-right">
+      <div class="chip amber" id="chip-mode"><i class="ti ti-flask"></i> SIM MODE</div>
+      <div class="chip" id="chip-rpc"><i class="ti ti-circle"></i> RPC...</div>
+      <div class="chip purple" id="chip-market"><i class="ti ti-trending-up"></i> MARKET...</div>
+    </div>
+  </div>
+  <div class="content">
+
+    <div class="page active" id="page-overview">
+      <div class="grid-4">
+        <div class="metric"><div class="metric-label">Sim PnL</div><div class="metric-value green" id="ov-pnl">+0.00 SOL</div><div class="metric-sub" id="ov-pnl-sub">No trades yet</div></div>
+        <div class="metric"><div class="metric-label">Win Rate</div><div class="metric-value" style="color:var(--accent)" id="ov-wr">0%</div><div class="metric-sub" id="ov-wr-sub">0 trades</div></div>
+        <div class="metric"><div class="metric-label">Deployed</div><div class="metric-value" style="color:var(--blue)" id="ov-deployed">0</div><div class="metric-sub">Tokens launched</div></div>
+        <div class="metric"><div class="metric-label">SOL Price</div><div class="metric-value amber" id="ov-sol-price">$0.00</div><div class="metric-sub" id="ov-sol-change">Loading...</div></div>
+      </div>
+      <div class="grid-21">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Live Scan Feed</div><div class="row" style="gap:6px"><span class="tag pump">pump</span><span class="tag bonk">bonk</span><span class="tag bags">bags</span></div></div>
+          <div id="live-feed"><div class="muted" style="text-align:center;padding:20px;font-size:12px">Start trader to see live feed</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title mb12">Bot Status</div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div class="row sb"><div><div style="font-size:12px;font-weight:500">X Monitor</div><div class="muted" style="font-size:11px" id="ov-monitor-sub">0 accounts</div></div><div class="toggle green" id="t-monitor" onclick="toggleBot('monitor')"></div></div>
+            <div class="row sb"><div><div style="font-size:12px;font-weight:500">Deployer</div><div class="muted" style="font-size:11px">Auto on signal</div></div><div class="toggle green" id="t-deployer"></div></div>
+            <div class="row sb"><div><div style="font-size:12px;font-weight:500">Trader</div><div class="muted" style="font-size:11px" id="ov-trader-sub">Stopped</div></div><div class="toggle green" id="t-trader" onclick="toggleBot('trader')"></div></div>
+            <div class="sep"></div>
+            <div class="row sb mb8"><span class="muted" style="font-size:11px">Market Mode</span><span class="tag sim" id="ov-market-mode">LOADING</span></div>
+            <div class="row sb"><span class="muted" style="font-size:11px">SOL 24h</span><span class="mono" style="font-size:12px" id="ov-sol-trend">...</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Wallet Performance</div><span class="tag sim">SIM</span></div>
+        <table class="tbl"><thead><tr><th>Wallet</th><th>Address</th><th>Balance</th><th>Sim PnL</th><th>WR</th><th>Trades</th><th>Open</th></tr></thead><tbody id="ov-wallet-rows"><tr><td colspan="7" class="muted" style="text-align:center;padding:20px">Generate wallets to begin</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <div class="page" id="page-deployer">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title mb12">Bundle Config</div>
+          <div class="input-group"><label class="input-label">Total SOL</label><div class="row" style="gap:10px"><input type="range" min="1" max="50" value="10" id="bundle-sol" oninput="updateBundlePreview()"><span class="mono" id="bundle-sol-val">10 SOL</span></div></div>
+          <div class="input-group"><label class="input-label">Wallets</label><div class="row" style="gap:10px"><input type="range" min="2" max="10" value="6" id="bundle-wallets" oninput="updateBundlePreview()"><span class="mono" id="bundle-wallets-val">6</span></div></div>
+          <div class="input-group"><label class="input-label">Supply %</label><div class="row" style="gap:10px"><input type="range" min="5" max="40" value="20" id="bundle-pct" oninput="updateBundlePreview()"><span class="mono" id="bundle-pct-val">20%</span></div></div>
+          <button class="btn primary" style="width:100%;margin-bottom:12px" onclick="saveDeployerConfig()"><i class="ti ti-device-floppy"></i> Save Config</button>
+          <div class="sep"></div>
+          <div class="card-title mb8">Distribution Preview</div>
+          <div id="bundle-preview"></div>
+        </div>
+        <div class="card">
+          <div class="card-title mb12">Platform Rules</div>
+          <div class="alert info"><i class="ti ti-robot"></i> AI selects platform by narrative</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px"><div class="row sb mb8"><span class="tag bonk">bonk.fun</span><span class="muted" style="font-size:11px">Politics / Elections</span></div><div class="pbar"><div class="pbar-fill" style="width:35%;background:var(--pink)"></div></div></div>
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px"><div class="row sb mb8"><span class="tag pump">pump.fun</span><span class="muted" style="font-size:11px">Tech / Memes / Culture</span></div><div class="pbar"><div class="pbar-fill" style="width:65%;background:var(--accent)"></div></div></div>
+          </div>
+          <div class="sep"></div>
+          <div class="card-title mb8">Deploy Log</div>
+          <div id="deploy-log"><div class="muted" style="font-size:12px;text-align:center;padding:16px">No deploys yet</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-trader">
+      <div class="alert warn"><i class="ti ti-flask"></i> Simulation mode active — no real capital used.</div>
+      <div class="grid-3">
+        <div class="metric"><div class="metric-label">Total Sim PnL</div><div class="metric-value green" id="tr-pnl">+0.00 SOL</div></div>
+        <div class="metric"><div class="metric-label">Win Rate</div><div class="metric-value" style="color:var(--accent)" id="tr-wr">0%</div><div class="metric-sub" id="tr-trades">0 trades</div></div>
+        <div class="metric"><div class="metric-label">Status</div><div class="metric-value amber" id="tr-status">STOPPED</div></div>
+      </div>
+      <div class="card mb12">
+        <div class="card-header"><div class="card-title">Config</div>
+          <div class="row" style="gap:8px">
+            <button class="btn success" onclick="startTrader()"><i class="ti ti-player-play"></i> Start</button>
+            <button class="btn danger" onclick="stopTrader()"><i class="ti ti-player-stop"></i> Stop</button>
+          </div>
+        </div>
+        <div class="grid-3" style="margin-bottom:0">
+          <div><label class="input-label">Min AI Score</label><div class="row" style="gap:8px;margin-top:4px"><input type="range" min="30" max="95" value="70" id="score-thresh" oninput="document.getElementById('stv').textContent=this.value"><span class="mono" id="stv">70</span></div></div>
+          <div><label class="input-label">Stop Loss %</label><div class="row" style="gap:8px;margin-top:4px"><input type="range" min="5" max="50" value="20" id="sl-pct" oninput="document.getElementById('slv').textContent=this.value+'%'"><span class="mono" id="slv">20%</span></div></div>
+          <div><label class="input-label">Take Profit %</label><div class="row" style="gap:8px;margin-top:4px"><input type="range" min="20" max="500" value="100" id="tp-pct" oninput="document.getElementById('tpv').textContent=this.value+'%'"><span class="mono" id="tpv">100%</span></div></div>
+        </div>
+        <button class="btn primary mt12" onclick="saveTraderConfig()"><i class="ti ti-device-floppy"></i> Save</button>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Wallet Performance</div></div>
+        <table class="tbl"><thead><tr><th>Wallet</th><th>Address</th><th>Sim PnL</th><th>WR</th><th>Trades</th><th>Open</th><th>Mode</th></tr></thead><tbody id="tr-wallet-rows"><tr><td colspan="7" class="muted" style="text-align:center;padding:20px">Start trader to see performance</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <div class="page" id="page-monitor">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title mb12">Tracked X Accounts</div>
+          <div class="input-group"><label class="input-label">Add Account</label><div class="row" style="gap:8px"><input class="input" id="acct-input" placeholder="e.g. elonmusk" onkeydown="if(event.key==='Enter')addAccount()"><button class="btn primary" onclick="addAccount()"><i class="ti ti-plus"></i> Add</button></div></div>
+          <div class="mb8 muted" style="font-size:11px">TRACKED</div>
+          <div id="acct-tags" class="row wrap" style="gap:4px;min-height:40px"><span class="muted" style="font-size:12px">None added.</span></div>
+          <div class="sep"></div>
+          <div class="row sb mb8"><div class="card-title">Monitor</div><div class="row" style="gap:8px"><button class="btn success sm" onclick="startMonitor()"><i class="ti ti-player-play"></i> Start</button><button class="btn danger sm" onclick="stopMonitor()"><i class="ti ti-player-stop"></i> Stop</button></div></div>
+          <div class="input-group"><label class="input-label">Poll Interval</label><div class="row" style="gap:10px"><input type="range" min="5" max="60" value="15" id="poll-interval" oninput="document.getElementById('piv').textContent=this.value+'s';saveMonitorSettings()"><span class="mono" id="piv">15s</span></div></div>
+        </div>
+        <div class="card">
+          <div class="card-title mb12">AI Filter</div>
+          <div class="alert info"><i class="ti ti-robot"></i> Claude classifies each tweet</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px"><div class="row sb"><span style="font-size:12px">Min Deploy Score</span><div class="row" style="gap:8px"><input type="range" min="50" max="99" value="75" style="width:80px" id="deploy-score-range" oninput="document.getElementById('dsv').textContent=this.value;saveMonitorSettings()"><span class="mono green" id="dsv">75</span></div></div></div>
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px"><div class="row sb"><span style="font-size:12px">Skip retweets</span><div class="toggle on green" id="tog-skip-rt" onclick="this.classList.toggle('on');saveMonitorSettings()"></div></div></div>
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px"><div class="row sb"><span style="font-size:12px">Skip replies</span><div class="toggle on green" id="tog-skip-rp" onclick="this.classList.toggle('on');saveMonitorSettings()"></div></div></div>
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px"><div class="row sb"><span style="font-size:12px">Manual approval</span><div class="toggle" id="tog-manual" onclick="this.classList.toggle('on');saveMonitorSettings()"></div></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Tweet Log</div></div>
+        <div id="tweet-log"><div class="muted" style="font-size:12px;text-align:center;padding:24px">No tweets processed yet.</div></div>
+      </div>
+    </div>
+
+    <div class="page" id="page-wallets">
+      <div class="card mb12">
+        <div class="card-header"><div class="card-title">Trader Wallets</div><div class="row" style="gap:8px"><button class="btn success" onclick="generateWallet()"><i class="ti ti-plus"></i> Generate</button><button class="btn" onclick="generateBundleWallets()"><i class="ti ti-stack"></i> Gen Bundle</button></div></div>
+        <div id="wallet-cards"><div class="muted" style="font-size:12px;text-align:center;padding:20px">No wallets yet.</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card"><div class="card-title mb12">Bundle Wallets</div><div id="bundle-wallet-cards"><div class="muted" style="font-size:12px;padding:12px">Click Gen Bundle above.</div></div></div>
+        <div class="card">
+          <div class="card-title mb12">Import Wallet</div>
+          <div class="alert warn"><i class="ti ti-shield"></i> Keys stored locally.</div>
+          <div class="input-group"><label class="input-label">Private Key</label><input class="input" type="password" id="import-pk" placeholder="Base58 private key..."></div>
+          <div class="input-group"><label class="input-label">Label</label><input class="input" id="import-label" placeholder="Trader Wallet 1"></div>
+          <button class="btn primary" style="width:100%" onclick="importWallet()"><i class="ti ti-file-import"></i> Import</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-history">
+      <div class="grid-3 mb12">
+        <div class="metric"><div class="metric-label">Total Trades</div><div class="metric-value mono" id="hist-total">0</div></div>
+        <div class="metric"><div class="metric-label">Best Trade</div><div class="metric-value green" id="hist-best">+0.00 SOL</div></div>
+        <div class="metric"><div class="metric-label">Worst Trade</div><div class="metric-value red" id="hist-worst">0.00 SOL</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Trade History</div><div class="row" style="gap:6px"><button class="btn sm" onclick="filterHistory('all')">All</button><button class="btn sm" onclick="filterHistory('win')">Wins</button><button class="btn sm" onclick="filterHistory('loss')">Losses</button></div></div>
+        <table class="tbl"><thead><tr><th>Time</th><th>Token</th><th>Platform</th><th>Wallet</th><th>PnL</th><th>PnL%</th><th>Score</th><th>Hold</th><th>Result</th></tr></thead><tbody id="history-rows"><tr><td colspan="9" class="muted" style="text-align:center;padding:20px">No trades yet</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <div class="page" id="page-ai">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title mb12">Scoring Weights</div>
+          <div id="ai-weights"><div class="muted" style="font-size:12px">Loading...</div></div>
+          <button class="btn mt12" style="width:100%" onclick="resetWeights()"><i class="ti ti-refresh"></i> Reset Defaults</button>
+        </div>
+        <div class="card">
+          <div class="card-title mb12">Training Stats</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px"><div class="row sb"><span style="font-size:12px">Auto-adapt market</span><div class="toggle on green"></div></div></div>
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px"><div class="row sb"><span style="font-size:12px">Self-training loop</span><div class="toggle on green"></div></div></div>
+          </div>
+          <div class="sep"></div>
+          <div class="row sb mb8"><span class="muted" style="font-size:11px">Samples</span><span class="mono" id="ai-samples">0</span></div>
+          <div class="row sb mb8"><span class="muted" style="font-size:11px">Wins / Losses</span><span class="mono"><span class="green" id="ai-wins">0</span> / <span class="red" id="ai-losses">0</span></span></div>
+          <div class="row sb mb8"><span class="muted" style="font-size:11px">Win Rate</span><span class="mono green" id="ai-wr">0%</span></div>
+          <div class="row sb"><span class="muted" style="font-size:11px">Last trained</span><span class="mono" id="ai-last" style="font-size:11px">Never</span></div>
+          <button class="btn primary mt12" style="width:100%" onclick="forceRetrain()"><i class="ti ti-brain"></i> Force Retrain</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-settings">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title mb12">RPC & API</div>
+          <div class="input-group"><label class="input-label">Helius RPC URL</label><input class="input" id="rpc-url" placeholder="https://mainnet.helius-rpc.com/?api-key=..."></div>
+          <div class="input-group"><label class="input-label">Anthropic API Key</label><input class="input" type="password" id="ai-key" placeholder="sk-ant-..."></div>
+          <button class="btn success" style="width:100%" onclick="testConnection()"><i class="ti ti-plug"></i> Test Connection</button>
+        </div>
+        <div class="card">
+          <div class="card-title mb12">Safety Rules</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px"><div class="row sb"><span style="font-size:12px">Max dev wallet</span><span class="mono red">15%</span></div></div>
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px"><div class="row sb"><span style="font-size:12px">Max top 10 holders</span><span class="mono amber">60%</span></div></div>
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px"><div class="row sb"><span style="font-size:12px">Honeypot check</span><span class="tag live">ALWAYS ON</span></div></div>
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px"><div class="row sb"><span style="font-size:12px">Launchpads</span><span class="muted" style="font-size:11px">pump/bonk/bags only</span></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title mb12">Live Mode</div>
+        <div class="alert warn"><i class="ti ti-alert-triangle"></i> Only enable after simulation training. Real SOL at risk.</div>
+        <div class="row" style="gap:12px">
+          <div class="toggle" id="live-toggle" onclick="toggleLiveMode()"></div>
+          <span style="font-size:13px">Enable Live Trading</span>
+          <span class="tag sim ml-auto" id="live-mode-tag">SIMULATION</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+<script>
+const API='http://localhost:3001/api';
+let allTrades=[],traderRunning=false,monitorRunning=false;
+const pageNames={overview:'Overview',deployer:'Deployer Bot',trader:'Trader Bot',monitor:'X Monitor',wallets:'Wallet Manager',history:'Trade History',ai:'AI Brain',settings:'Settings'};
+function nav(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>{if(n.textContent.trim().toLowerCase().startsWith(pageNames[id].split(' ')[0].toLowerCase()))n.classList.add('active');});
+  document.getElementById('page-title').textContent=pageNames[id];
+  if(id==='history')loadHistory();
+  if(id==='wallets')loadWallets();
+  if(id==='ai')loadAI();
+  if(id==='deployer')loadDeployer();
+}
+async function api(method,path,body){
+  try{const r=await fetch(API+path,{method,headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});return await r.json();}
+  catch(e){return{success:false,error:e.message};}
+}
+function toast(msg,color='var(--text)'){const t=document.createElement('div');t.className='toast';t.style.borderColor=color;t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000);}
+async function checkHealth(){
+  const r=await api('GET','/health');
+  if(r.success){document.getElementById('rpc-dot').style.background='var(--green)';document.getElementById('rpc-status').textContent='Backend online';document.getElementById('chip-rpc').className='chip green';document.getElementById('chip-rpc').innerHTML='<i class="ti ti-circle-check"></i> RPC OK';}
+  else{document.getElementById('rpc-dot').style.background='var(--red)';document.getElementById('rpc-status').textContent='Backend offline';}
+}
+async function loadMarket(){
+  const r=await api('GET','/market');if(!r.success)return;
+  const d=r.data;
+  document.getElementById('ov-sol-price').textContent='$'+(d.solPrice||0).toFixed(2);
+  const chg=(d.solPriceChange24h||0).toFixed(1);
+  document.getElementById('ov-sol-change').textContent=(chg>0?'+':'')+chg+'% 24h';
+  document.getElementById('ov-sol-change').className='metric-sub '+(chg>0?'green':'red');
+  document.getElementById('ov-sol-trend').textContent=(chg>0?'▲ ':'▼ ')+Math.abs(chg)+'%';
+  document.getElementById('ov-sol-trend').className='mono '+(chg>0?'green':'red');
+  const mode=(d.mode||'normal').toUpperCase();
+  document.getElementById('ov-market-mode').textContent=mode;
+  document.getElementById('chip-market').innerHTML='<i class="ti ti-trending-up"></i> '+mode;
+}
+async function loadTraderStatus(){
+  const r=await api('GET','/trader/status');if(!r.success)return;
+  const d=r.data;traderRunning=d.running;
+  document.getElementById('tr-pnl').textContent=(d.totalPnlSol>=0?'+':'')+d.totalPnlSol+' SOL';
+  document.getElementById('tr-pnl').className='metric-value '+(d.totalPnlSol>=0?'green':'red');
+  document.getElementById('tr-wr').textContent=d.winRate+'%';
+  document.getElementById('tr-trades').textContent=d.totalTrades+' trades';
+  document.getElementById('tr-status').textContent=d.running?'RUNNING':'STOPPED';
+  document.getElementById('tr-status').className='metric-value '+(d.running?'green':'amber');
+  document.getElementById('badge-trader').textContent=d.running?(d.liveMode?'LIVE':'SIM'):'OFF';
+  document.getElementById('t-trader').classList.toggle('on',d.running);
+  document.getElementById('ov-trader-sub').textContent=d.running?(d.liveMode?'LIVE':'Sim running'):'Stopped';
+  if(d.wallets&&d.wallets.length){
+    document.getElementById('ov-wallet-rows').innerHTML=d.wallets.map(w=>`<tr><td class="mono" style="font-size:11px">${w.label}</td><td class="mono muted" style="font-size:11px">${w.publicKey.slice(0,8)}...${w.publicKey.slice(-4)}</td><td class="mono">${w.simBalance} SOL</td><td class="mono ${w.simPnl>=0?'green':'red'}">${w.simPnl>=0?'+':''}${w.simPnl} SOL</td><td class="mono" style="color:var(--accent)">${w.winRate}%</td><td class="mono">${w.wins+w.losses}</td><td class="mono amber">${w.openPositions}</td></tr>`).join('');
+    document.getElementById('tr-wallet-rows').innerHTML=d.wallets.map(w=>`<tr><td class="mono" style="font-size:11px">${w.label}</td><td class="mono muted" style="font-size:11px">${w.publicKey.slice(0,8)}...${w.publicKey.slice(-4)}</td><td class="mono ${w.simPnl>=0?'green':'red'}">${w.simPnl>=0?'+':''}${w.simPnl} SOL</td><td class="mono" style="color:var(--accent)">${w.winRate}%</td><td class="mono">${w.wins+w.losses}</td><td class="mono amber">${w.openPositions}</td><td><span class="tag sim">SIM</span></td></tr>`).join('');
+    const tp=d.wallets.reduce((a,w)=>a+w.simPnl,0);
+    document.getElementById('ov-pnl').textContent=(tp>=0?'+':'')+tp.toFixed(4)+' SOL';
+    document.getElementById('ov-pnl').className='metric-value '+(tp>=0?'green':'red');
+    document.getElementById('ov-wr').textContent=d.winRate+'%';
+    document.getElementById('ov-wr-sub').textContent=d.totalTrades+' trades';
+  }
+}
+async function startTrader(){const r=await api('POST','/trader/start');if(r.success){toast('Trader started ✓','var(--green)');loadTraderStatus();}else toast('Error: '+r.error,'var(--red)');}
+async function stopTrader(){await api('POST','/trader/stop');toast('Trader stopped','var(--amber)');loadTraderStatus();}
+async function saveTraderConfig(){await api('PATCH','/trader/config',{scoreThreshold:parseInt(document.getElementById('score-thresh').value),stopLossPct:parseFloat(document.getElementById('sl-pct').value),takeProfitPct:parseFloat(document.getElementById('tp-pct').value)});toast('Saved ✓','var(--green)');}
+async function loadMonitorStatus(){
+  const r=await api('GET','/monitor/status');if(!r.success)return;
+  const d=r.data;monitorRunning=d.running;
+  document.getElementById('badge-monitor').textContent=d.accounts.length;
+  document.getElementById('ov-monitor-sub').textContent=d.accounts.length+' accounts';
+  document.getElementById('t-monitor').classList.toggle('on',d.running);
+  const c=document.getElementById('acct-tags');
+  c.innerHTML=d.accounts.length?d.accounts.map(a=>`<div class="acct-tag" onclick="removeAccount('${a}')"><i class="ti ti-brand-x"></i> @${a} <i class="ti ti-x" style="font-size:11px;color:var(--muted)"></i></div>`).join(''):'<span class="muted" style="font-size:12px">None added.</span>';
+  const tl=document.getElementById('tweet-log');
+  if(d.tweetLog&&d.tweetLog.length){tl.innerHTML=d.tweetLog.map(t=>`<div style="padding:10px 0;border-bottom:1px solid var(--border)"><div class="row sb mb8"><span class="mono" style="font-size:11px;color:var(--accent)">@${t.username}</span><span class="muted" style="font-size:11px">${new Date(t.timestamp).toLocaleTimeString()}</span><div class="score-ring ${t.classification.score>=75?'score-high':t.classification.score>=50?'score-med':'score-low'}" style="width:26px;height:26px;font-size:10px">${t.classification.score}</div></div><div style="font-size:12px;margin-bottom:6px;color:var(--muted)">${t.text.slice(0,120)}...</div><div class="row" style="gap:6px">${t.classification.deployable?'<span class="tag buy">DEPLOY</span>':'<span class="tag sell">SKIP</span>'}<span class="tag ${t.classification.platform==='bonkfun'?'bonk':'pump'}">${t.classification.platform}</span></div></div>`).join('');}
+}
+async function addAccount(){const v=document.getElementById('acct-input').value.trim();if(!v)return;const r=await api('POST','/monitor/accounts',{username:v});if(r.success){document.getElementById('acct-input').value='';loadMonitorStatus();toast('@'+v+' added ✓','var(--green)');}else toast(r.error,'var(--red)');}
+async function removeAccount(u){await api('DELETE','/monitor/accounts/'+u);loadMonitorStatus();toast('@'+u+' removed','var(--amber)');}
+async function startMonitor(){const r=await api('POST','/monitor/start');if(r.success){toast('Monitor started ✓','var(--green)');loadMonitorStatus();}else toast('Error: '+r.error,'var(--red)');}
+async function stopMonitor(){await api('POST','/monitor/stop');toast('Monitor stopped','var(--amber)');loadMonitorStatus();}
+async function saveMonitorSettings(){await api('PATCH','/monitor/settings',{pollIntervalSeconds:parseInt(document.getElementById('poll-interval').value),minDeployScore:parseInt(document.getElementById('deploy-score-range').value),skipRetweets:document.getElementById('tog-skip-rt').classList.contains('on'),skipReplies:document.getElementById('tog-skip-rp').classList.contains('on'),manualApproval:document.getElementById('tog-manual').classList.contains('on')});}
+async function toggleBot(bot){if(bot==='trader'){traderRunning?await stopTrader():await startTrader();}if(bot==='monitor'){monitorRunning?await stopMonitor():await startMonitor();}}
+async function loadWallets(){
+  const r=await api('GET','/wallets');if(!r.success)return;
+  const{trader,bundle}=r.data;
+  document.getElementById('wallet-cards').innerHTML=trader.length?trader.map(w=>`<div class="wallet-card"><div class="row sb"><div><div style="font-size:13px;font-weight:500">${w.label}</div><div class="wallet-addr">${w.publicKey}</div></div><div class="row" style="gap:6px"><span class="tag sim">TRADER</span><button class="btn sm danger" onclick="removeWallet('${w.id}')"><i class="ti ti-trash"></i></button></div></div></div>`).join(''):'<div class="muted" style="font-size:12px;text-align:center;padding:20px">No wallets yet.</div>';
+  document.getElementById('bundle-wallet-cards').innerHTML=bundle.length?bundle.map(w=>`<div class="wallet-card"><div class="row sb"><div><div style="font-size:12px;font-weight:500">${w.label}</div><div class="wallet-addr">${w.publicKey.slice(0,24)}...${w.publicKey.slice(-8)}</div></div><span class="tag" style="color:var(--pink)">BUNDLE</span></div></div>`).join(''):'<div class="muted" style="font-size:12px;padding:12px">No bundle wallets.</div>';
+}
+async function generateWallet(){const r=await api('POST','/wallets/generate',{label:'Trader W'+(Date.now()%10000),type:'trader'});if(r.success){toast('Wallet generated ✓','var(--green)');loadWallets();}else toast(r.error,'var(--red)');}
+async function generateBundleWallets(){const c=parseInt(document.getElementById('bundle-wallets').value)||6;const r=await api('POST','/wallets/bundle/generate',{count:c});if(r.success){toast(c+' bundle wallets generated ✓','var(--green)');loadWallets();}else toast(r.error,'var(--red)');}
+async function removeWallet(id){if(!confirm('Remove wallet?'))return;await api('DELETE','/wallets/'+id);loadWallets();toast('Removed','var(--amber)');}
+async function importWallet(){const pk=document.getElementById('import-pk').value.trim();const label=document.getElementById('import-label').value.trim()||'Imported';if(!pk)return toast('Enter private key','var(--red)');const r=await api('POST','/wallets/import',{privateKey:pk,label,type:'trader'});if(r.success){toast('Imported ✓','var(--green)');document.getElementById('import-pk').value='';loadWallets();}else toast(r.error,'var(--red)');}
+async function loadDeployer(){const r=await api('GET','/deployer/status');if(!r.success)return;const d=r.data;document.getElementById('ov-deployed').textContent=d.deployLog?d.deployLog.filter(x=>x.status!=='failed').length:0;const dl=document.getElementById('deploy-log');if(d.deployLog&&d.deployLog.length){dl.innerHTML=d.deployLog.slice(0,20).map(e=>`<div style="padding:8px 0;border-bottom:1px solid var(--border)"><div class="row sb"><span class="mono" style="font-size:12px">${e.token?.ticker?'$'+e.token.ticker:'Unknown'}</span><span class="tag ${e.simulated?'sim':e.status==='deployed'?'buy':'sell'}">${e.simulated?'SIM':e.status?.toUpperCase()}</span><span class="muted" style="font-size:11px">${new Date(e.timestamp).toLocaleTimeString()}</span></div>${e.tweet?`<div class="muted" style="font-size:11px;margin-top:4px">@${e.tweet.username}: ${e.tweet.text?.slice(0,60)}...</div>`:''}</div>`).join('');}else{dl.innerHTML='<div class="muted" style="font-size:12px;text-align:center;padding:16px">No deploys yet</div>';}}
+async function saveDeployerConfig(){const r=await api('POST','/deployer/config',{bundleSol:parseFloat(document.getElementById('bundle-sol').value),bundleWalletCount:parseInt(document.getElementById('bundle-wallets').value),bundleSupplyPct:parseInt(document.getElementById('bundle-pct').value)});if(r.success)toast('Saved ✓','var(--green)');}
+function updateBundlePreview(){
+  const sol=parseFloat(document.getElementById('bundle-sol').value),count=parseInt(document.getElementById('bundle-wallets').value),pct=parseInt(document.getElementById('bundle-pct').value);
+  document.getElementById('bundle-sol-val').textContent=sol+' SOL';document.getElementById('bundle-wallets-val').textContent=count;document.getElementById('bundle-pct-val').textContent=pct+'%';
+  let amounts=[],rem=sol;
+  for(let i=0;i<count-1;i++){const max=rem-(count-i-1)*0.01;const val=Math.round((Math.random()*(max-0.01)+0.01)*1000)/1000;amounts.push(val);rem=Math.round((rem-val)*1000)/1000;}
+  amounts.push(rem);amounts.sort(()=>Math.random()-.5);
+  document.getElementById('bundle-preview').innerHTML=amounts.map((a,i)=>`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><span class="mono muted" style="font-size:11px;min-width:70px">Wallet ${i+1}</span><div style="flex:1"><div class="pbar"><div class="pbar-fill" style="width:${(a/sol*100).toFixed(0)}%;background:var(--accent)"></div></div></div><span class="mono" style="font-size:12px;min-width:55px;text-align:right">${a.toFixed(3)} SOL</span></div>`).join('');
+}
+async function loadHistory(){const r=await api('GET','/trader/status');if(!r.success)return;allTrades=r.data.recentTrades||[];renderHistory(allTrades);if(allTrades.length){document.getElementById('hist-total').textContent=allTrades.length;const best=Math.max(...allTrades.map(t=>t.pnlSol));const worst=Math.min(...allTrades.map(t=>t.pnlSol));document.getElementById('hist-best').textContent='+'+best.toFixed(4)+' SOL';document.getElementById('hist-worst').textContent=worst.toFixed(4)+' SOL';}}
+function filterHistory(type){renderHistory(type==='all'?allTrades:allTrades.filter(t=>t.result===type));}
+function renderHistory(trades){const tb=document.getElementById('history-rows');if(!trades.length){tb.innerHTML='<tr><td colspan="9" class="muted" style="text-align:center;padding:20px">No trades</td></tr>';return;}tb.innerHTML=trades.map(t=>`<tr><td class="mono muted" style="font-size:11px">${new Date(t.timestamp).toLocaleTimeString()}</td><td class="mono bold">$${t.ticker}</td><td><span class="tag ${t.platform}">${t.platform}</span></td><td class="muted">${t.walletLabel||''}</td><td class="mono ${t.pnlSol>=0?'green':'red'}">${t.pnlSol>=0?'+':''}${t.pnlSol} SOL</td><td class="mono ${t.pnlPct>=0?'green':'red'}">${t.pnlPct>=0?'+':''}${t.pnlPct}%</td><td><div class="score-ring ${t.aiScore>=80?'score-high':t.aiScore>=65?'score-med':'score-low'}" style="width:26px;height:26px;font-size:10px">${t.aiScore}</div></td><td class="mono muted">${t.holdTimeSeconds}s</td><td><span class="tag ${t.result==='win'?'buy':'sell'}">${t.result?.toUpperCase()}</span></td></tr>`).join('');}
+async function loadAI(){const r=await api('GET','/trainer/stats');if(!r.success)return;const d=r.data;document.getElementById('ai-samples').textContent=d.samples;document.getElementById('ai-wins').textContent=d.wins;document.getElementById('ai-losses').textContent=d.losses;document.getElementById('ai-wr').textContent=d.winRate+'%';document.getElementById('ai-last').textContent=d.lastTrained?new Date(d.lastTrained).toLocaleString():'Never';if(d.weights){document.getElementById('ai-weights').innerHTML=Object.entries(d.weights).map(([k,v])=>`<div class="mb8"><div class="row sb mb4"><span style="font-size:12px">${k.replace(/_/g,' ')}</span><span class="mono" style="font-size:12px">${parseFloat(v).toFixed(2)}</span></div><div class="pbar"><div class="pbar-fill" style="width:${Math.min(100,v*50)}%;background:var(--accent)"></div></div></div>`).join('');}}
+async function forceRetrain(){const r=await api('POST','/trainer/retrain');if(r.success){toast('Retrain complete ✓','var(--green)');loadAI();}}
+async function resetWeights(){if(!confirm('Reset weights?'))return;await api('POST','/trainer/reset');toast('Reset ✓','var(--amber)');loadAI();}
+async function toggleLiveMode(){const t=document.getElementById('live-toggle');const on=!t.classList.contains('on');if(on&&!confirm('⚠️ Enable LIVE mode? Real SOL will be used.'))return;t.classList.toggle('on',on);document.getElementById('live-mode-tag').textContent=on?'LIVE MODE':'SIMULATION';document.getElementById('live-mode-tag').className='tag ml-auto '+(on?'live':'sim');document.getElementById('chip-mode').className='chip '+(on?'red':'amber');document.getElementById('chip-mode').innerHTML=on?'<i class="ti ti-flame"></i> LIVE MODE':'<i class="ti ti-flask"></i> SIM MODE';await api('PATCH','/trader/config',{liveMode:on});toast(on?'🔴 LIVE MODE — real SOL at risk':'Simulation mode','on'?'var(--red)':'var(--green)');}
+async function testConnection(){const r=await api('GET','/health');if(r.success)toast('Connected ✓','var(--green)');else toast('Failed','var(--red)');}
+const feedIcons=['🐸','🚀','💰','🦊','🌭','⚡','🎯','💎'];
+const platforms=['pumpfun','bonkfun','bagsfm'];
+const tickers=['KEKW','MARSAI','BAGGED','FOXRUN','HOTDOG','ZAPP','BULLX','DEGEN','WAGMI','NGMI'];
+let feedItems=[];
+function updateFeed(){if(!traderRunning)return;if(feedItems.length>=6)feedItems.pop();feedItems.unshift({icon:feedIcons[Math.floor(Math.random()*feedIcons.length)],ticker:'$'+tickers[Math.floor(Math.random()*tickers.length)],platform:platforms[Math.floor(Math.random()*platforms.length)],stage:['new','finalstretch','migrated'][Math.floor(Math.random()*3)],change:((Math.random()*400)-50).toFixed(0),score:Math.floor(Math.random()*60)+30});const el=document.getElementById('live-feed');el.innerHTML=feedItems.map(c=>`<div class="feed-item"><div class="feed-coin">${c.icon}</div><div><div style="font-weight:500;font-size:12px;font-family:var(--mono)">${c.ticker}</div><div class="muted" style="font-size:11px">${c.platform} · ${c.stage}</div></div><div style="margin-left:auto;text-align:right"><div class="mono ${parseFloat(c.change)>=0?'green':'red'}" style="font-size:12px">${parseFloat(c.change)>=0?'+':''}${c.change}%</div><div class="score-ring ${c.score>=75?'score-high':c.score>=55?'score-med':'score-low'}" style="width:24px;height:24px;font-size:10px;margin-top:4px;margin-left:auto">${c.score}</div></div></div>`).join('');}
+async function init(){await checkHealth();await loadMarket();await loadTraderStatus();await loadMonitorStatus();updateBundlePreview();setInterval(async()=>{await loadTraderStatus();await loadMonitorStatus();},5000);setInterval(loadMarket,60000);setInterval(()=>{if(traderRunning)updateFeed();},2000);}
+init();
+</script>
+</body>
+</html>
