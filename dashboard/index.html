@@ -95,12 +95,15 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13
 .score-med{color:var(--amber);border-color:var(--amber);}
 .score-low{color:var(--red);border-color:var(--red);}
 .wallet-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:8px;}
-.wallet-addr{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:4px;}
+.wallet-addr{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:4px;word-break:break-all;}
 .acct-tag{display:inline-flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 10px;margin:3px;font-size:12px;cursor:pointer;}
 .acct-tag:hover{border-color:var(--red);color:var(--red);}
 .feed-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
 .feed-item:last-child{border-bottom:none;}
 .feed-coin{width:30px;height:30px;border-radius:50%;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+.ca-cell{cursor:pointer;}
+.ca-cell:hover .ca-text{color:var(--accent);}
+.ca-text{font-size:9px;color:var(--muted);font-family:var(--mono);word-break:break-all;margin-top:2px;}
 input[type=range]{-webkit-appearance:none;width:100%;height:4px;border-radius:2px;background:var(--bg4);outline:none;cursor:pointer;}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;}
 ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px;}
@@ -210,8 +213,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
         </div>
         <div class="grid-3" style="margin-bottom:0">
           <div><label class="input-label">Min AI Score</label><div class="row" style="gap:8px;margin-top:4px"><input type="range" min="30" max="95" value="70" id="score-thresh" oninput="document.getElementById('stv').textContent=this.value"><span class="mono" id="stv">70</span></div></div>
-          <div><label class="input-label">Stop Loss %</label><div class="row" style="gap:8px;margin-top:4px"><input type="range" min="5" max="50" value="20" id="sl-pct" oninput="document.getElementById('slv').textContent=this.value+'%'"><span class="mono" id="slv">20%</span></div></div>
-          <div><label class="input-label">Take Profit %</label><div class="row" style="gap:8px;margin-top:4px"><input type="range" min="20" max="500" value="100" id="tp-pct" oninput="document.getElementById('tpv').textContent=this.value+'%'"><span class="mono" id="tpv">100%</span></div></div>
+          <div><label class="input-label">Stop Loss %</label><div class="row" style="gap:8px;margin-top:4px"><input type="range" min="1" max="95" value="20" id="sl-pct" oninput="document.getElementById('slv').textContent=this.value+'%'"><span class="mono" id="slv">20%</span></div></div>
+          <div><label class="input-label">Take Profit %</label><div class="row" style="gap:8px;margin-top:4px"><input type="range" min="10" max="10000" value="100" id="tp-pct" oninput="document.getElementById('tpv').textContent=this.value+'%'"><span class="mono" id="tpv">100%</span></div></div>
         </div>
         <button class="btn primary mt12" onclick="saveTraderConfig()"><i class="ti ti-device-floppy"></i> Save</button>
       </div>
@@ -274,7 +277,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
       </div>
       <div class="card">
         <div class="card-header"><div class="card-title">Trade History</div><div class="row" style="gap:6px"><button class="btn sm" onclick="filterHistory('all')">All</button><button class="btn sm" onclick="filterHistory('win')">Wins</button><button class="btn sm" onclick="filterHistory('loss')">Losses</button></div></div>
-        <table class="tbl"><thead><tr><th>Time</th><th>Token</th><th>Platform</th><th>Wallet</th><th>PnL</th><th>PnL%</th><th>Score</th><th>Hold</th><th>Result</th></tr></thead><tbody id="history-rows"><tr><td colspan="9" class="muted" style="text-align:center;padding:20px">No trades yet</td></tr></tbody></table>
+        <table class="tbl">
+          <thead><tr><th>Time</th><th>Token + CA</th><th>Platform</th><th>Wallet</th><th>Bought</th><th>Sold</th><th>PnL</th><th>PnL%</th><th>Score</th><th>Hold</th><th>Result</th></tr></thead>
+          <tbody id="history-rows"><tr><td colspan="11" class="muted" style="text-align:center;padding:20px">No trades yet</td></tr></tbody>
+        </table>
       </div>
     </div>
 
@@ -353,24 +359,9 @@ async function api(method,path,body){
   catch(e){return{success:false,error:e.message};}
 }
 function toast(msg,color='var(--text)'){const t=document.createElement('div');t.className='toast';t.style.borderColor=color;t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000);}
-async function checkHealth(){
-  const r=await api('GET','/health');
-  if(r.success){document.getElementById('rpc-dot').style.background='var(--green)';document.getElementById('rpc-status').textContent='Backend online';document.getElementById('chip-rpc').className='chip green';document.getElementById('chip-rpc').innerHTML='<i class="ti ti-circle-check"></i> RPC OK';}
-  else{document.getElementById('rpc-dot').style.background='var(--red)';document.getElementById('rpc-status').textContent='Backend offline';}
-}
-async function loadMarket(){
-  const r=await api('GET','/market');if(!r.success)return;
-  const d=r.data;
-  document.getElementById('ov-sol-price').textContent='$'+(d.solPrice||0).toFixed(2);
-  const chg=(d.solPriceChange24h||0).toFixed(1);
-  document.getElementById('ov-sol-change').textContent=(chg>0?'+':'')+chg+'% 24h';
-  document.getElementById('ov-sol-change').className='metric-sub '+(chg>0?'green':'red');
-  document.getElementById('ov-sol-trend').textContent=(chg>0?'▲ ':'▼ ')+Math.abs(chg)+'%';
-  document.getElementById('ov-sol-trend').className='mono '+(chg>0?'green':'red');
-  const mode=(d.mode||'normal').toUpperCase();
-  document.getElementById('ov-market-mode').textContent=mode;
-  document.getElementById('chip-market').innerHTML='<i class="ti ti-trending-up"></i> '+mode;
-}
+function copyCA(ca){if(!ca||ca==='pending')return toast('No CA yet','var(--amber)');navigator.clipboard.writeText(ca).then(()=>toast('CA copied ✓','var(--green)')).catch(()=>{const el=document.createElement('textarea');el.value=ca;document.body.appendChild(el);el.select();document.execCommand('copy');el.remove();toast('CA copied ✓','var(--green)');});}
+async function checkHealth(){const r=await api('GET','/health');if(r.success){document.getElementById('rpc-dot').style.background='var(--green)';document.getElementById('rpc-status').textContent='Backend online';document.getElementById('chip-rpc').className='chip green';document.getElementById('chip-rpc').innerHTML='<i class="ti ti-circle-check"></i> RPC OK';}else{document.getElementById('rpc-dot').style.background='var(--red)';document.getElementById('rpc-status').textContent='Backend offline';}}
+async function loadMarket(){const r=await api('GET','/market');if(!r.success)return;const d=r.data;document.getElementById('ov-sol-price').textContent='$'+(d.solPrice||0).toFixed(2);const chg=(d.solPriceChange24h||0).toFixed(1);document.getElementById('ov-sol-change').textContent=(chg>0?'+':'')+chg+'% 24h';document.getElementById('ov-sol-change').className='metric-sub '+(chg>0?'green':'red');document.getElementById('ov-sol-trend').textContent=(chg>0?'▲ ':'▼ ')+Math.abs(chg)+'%';document.getElementById('ov-sol-trend').className='mono '+(chg>0?'green':'red');const mode=(d.mode||'normal').toUpperCase();document.getElementById('ov-market-mode').textContent=mode;document.getElementById('chip-market').innerHTML='<i class="ti ti-trending-up"></i> '+mode;}
 async function loadTraderStatus(){
   const r=await api('GET','/trader/status');if(!r.success)return;
   const d=r.data;traderRunning=d.running;
@@ -396,50 +387,47 @@ async function loadTraderStatus(){
 async function startTrader(){const r=await api('POST','/trader/start');if(r.success){toast('Trader started ✓','var(--green)');loadTraderStatus();}else toast('Error: '+r.error,'var(--red)');}
 async function stopTrader(){await api('POST','/trader/stop');toast('Trader stopped','var(--amber)');loadTraderStatus();}
 async function saveTraderConfig(){await api('PATCH','/trader/config',{scoreThreshold:parseInt(document.getElementById('score-thresh').value),stopLossPct:parseFloat(document.getElementById('sl-pct').value),takeProfitPct:parseFloat(document.getElementById('tp-pct').value)});toast('Saved ✓','var(--green)');}
-async function loadMonitorStatus(){
-  const r=await api('GET','/monitor/status');if(!r.success)return;
-  const d=r.data;monitorRunning=d.running;
-  document.getElementById('badge-monitor').textContent=d.accounts.length;
-  document.getElementById('ov-monitor-sub').textContent=d.accounts.length+' accounts';
-  document.getElementById('t-monitor').classList.toggle('on',d.running);
-  const c=document.getElementById('acct-tags');
-  c.innerHTML=d.accounts.length?d.accounts.map(a=>`<div class="acct-tag" onclick="removeAccount('${a}')"><i class="ti ti-brand-x"></i> @${a} <i class="ti ti-x" style="font-size:11px;color:var(--muted)"></i></div>`).join(''):'<span class="muted" style="font-size:12px">None added.</span>';
-  const tl=document.getElementById('tweet-log');
-  if(d.tweetLog&&d.tweetLog.length){tl.innerHTML=d.tweetLog.map(t=>`<div style="padding:10px 0;border-bottom:1px solid var(--border)"><div class="row sb mb8"><span class="mono" style="font-size:11px;color:var(--accent)">@${t.username}</span><span class="muted" style="font-size:11px">${new Date(t.timestamp).toLocaleTimeString()}</span><div class="score-ring ${t.classification.score>=75?'score-high':t.classification.score>=50?'score-med':'score-low'}" style="width:26px;height:26px;font-size:10px">${t.classification.score}</div></div><div style="font-size:12px;margin-bottom:6px;color:var(--muted)">${t.text.slice(0,120)}...</div><div class="row" style="gap:6px">${t.classification.deployable?'<span class="tag buy">DEPLOY</span>':'<span class="tag sell">SKIP</span>'}<span class="tag ${t.classification.platform==='bonkfun'?'bonk':'pump'}">${t.classification.platform}</span></div></div>`).join('');}
-}
+async function loadMonitorStatus(){const r=await api('GET','/monitor/status');if(!r.success)return;const d=r.data;monitorRunning=d.running;document.getElementById('badge-monitor').textContent=d.accounts.length;document.getElementById('ov-monitor-sub').textContent=d.accounts.length+' accounts';document.getElementById('t-monitor').classList.toggle('on',d.running);const c=document.getElementById('acct-tags');c.innerHTML=d.accounts.length?d.accounts.map(a=>`<div class="acct-tag" onclick="removeAccount('${a}')"><i class="ti ti-brand-x"></i> @${a} <i class="ti ti-x" style="font-size:11px;color:var(--muted)"></i></div>`).join(''):'<span class="muted" style="font-size:12px">None added.</span>';const tl=document.getElementById('tweet-log');if(d.tweetLog&&d.tweetLog.length){tl.innerHTML=d.tweetLog.map(t=>`<div style="padding:10px 0;border-bottom:1px solid var(--border)"><div class="row sb mb8"><span class="mono" style="font-size:11px;color:var(--accent)">@${t.username}</span><span class="muted" style="font-size:11px">${new Date(t.timestamp).toLocaleTimeString()}</span><div class="score-ring ${t.classification.score>=75?'score-high':t.classification.score>=50?'score-med':'score-low'}" style="width:26px;height:26px;font-size:10px">${t.classification.score}</div></div><div style="font-size:12px;margin-bottom:6px;color:var(--muted)">${t.text.slice(0,120)}...</div><div class="row" style="gap:6px">${t.classification.deployable?'<span class="tag buy">DEPLOY</span>':'<span class="tag sell">SKIP</span>'}<span class="tag ${t.classification.platform==='bonkfun'?'bonk':'pump'}">${t.classification.platform}</span></div></div>`).join('');}}
 async function addAccount(){const v=document.getElementById('acct-input').value.trim();if(!v)return;const r=await api('POST','/monitor/accounts',{username:v});if(r.success){document.getElementById('acct-input').value='';loadMonitorStatus();toast('@'+v+' added ✓','var(--green)');}else toast(r.error,'var(--red)');}
 async function removeAccount(u){await api('DELETE','/monitor/accounts/'+u);loadMonitorStatus();toast('@'+u+' removed','var(--amber)');}
 async function startMonitor(){const r=await api('POST','/monitor/start');if(r.success){toast('Monitor started ✓','var(--green)');loadMonitorStatus();}else toast('Error: '+r.error,'var(--red)');}
 async function stopMonitor(){await api('POST','/monitor/stop');toast('Monitor stopped','var(--amber)');loadMonitorStatus();}
 async function saveMonitorSettings(){await api('PATCH','/monitor/settings',{pollIntervalSeconds:parseInt(document.getElementById('poll-interval').value),minDeployScore:parseInt(document.getElementById('deploy-score-range').value),skipRetweets:document.getElementById('tog-skip-rt').classList.contains('on'),skipReplies:document.getElementById('tog-skip-rp').classList.contains('on'),manualApproval:document.getElementById('tog-manual').classList.contains('on')});}
 async function toggleBot(bot){if(bot==='trader'){traderRunning?await stopTrader():await startTrader();}if(bot==='monitor'){monitorRunning?await stopMonitor():await startMonitor();}}
-async function loadWallets(){
-  const r=await api('GET','/wallets');if(!r.success)return;
-  const{trader,bundle}=r.data;
-  document.getElementById('wallet-cards').innerHTML=trader.length?trader.map(w=>`<div class="wallet-card"><div class="row sb"><div><div style="font-size:13px;font-weight:500">${w.label}</div><div class="wallet-addr">${w.publicKey}</div></div><div class="row" style="gap:6px"><span class="tag sim">TRADER</span><button class="btn sm danger" onclick="removeWallet('${w.id}')"><i class="ti ti-trash"></i></button></div></div></div>`).join(''):'<div class="muted" style="font-size:12px;text-align:center;padding:20px">No wallets yet.</div>';
-  document.getElementById('bundle-wallet-cards').innerHTML=bundle.length?bundle.map(w=>`<div class="wallet-card"><div class="row sb"><div><div style="font-size:12px;font-weight:500">${w.label}</div><div class="wallet-addr">${w.publicKey.slice(0,24)}...${w.publicKey.slice(-8)}</div></div><span class="tag" style="color:var(--pink)">BUNDLE</span></div></div>`).join(''):'<div class="muted" style="font-size:12px;padding:12px">No bundle wallets.</div>';
-}
+async function loadWallets(){const r=await api('GET','/wallets');if(!r.success)return;const{trader,bundle}=r.data;document.getElementById('wallet-cards').innerHTML=trader.length?trader.map(w=>`<div class="wallet-card"><div class="row sb"><div><div style="font-size:13px;font-weight:500">${w.label}</div><div class="wallet-addr">${w.publicKey}</div></div><div class="row" style="gap:6px"><span class="tag sim">TRADER</span><button class="btn sm danger" onclick="removeWallet('${w.id}')"><i class="ti ti-trash"></i></button></div></div></div>`).join(''):'<div class="muted" style="font-size:12px;text-align:center;padding:20px">No wallets yet.</div>';document.getElementById('bundle-wallet-cards').innerHTML=bundle.length?bundle.map(w=>`<div class="wallet-card"><div class="row sb"><div><div style="font-size:12px;font-weight:500">${w.label}</div><div class="wallet-addr">${w.publicKey}</div></div><span class="tag" style="color:var(--pink)">BUNDLE</span></div></div>`).join(''):'<div class="muted" style="font-size:12px;padding:12px">No bundle wallets.</div>';}
 async function generateWallet(){const r=await api('POST','/wallets/generate',{label:'Trader W'+(Date.now()%10000),type:'trader'});if(r.success){toast('Wallet generated ✓','var(--green)');loadWallets();}else toast(r.error,'var(--red)');}
 async function generateBundleWallets(){const c=parseInt(document.getElementById('bundle-wallets').value)||6;const r=await api('POST','/wallets/bundle/generate',{count:c});if(r.success){toast(c+' bundle wallets generated ✓','var(--green)');loadWallets();}else toast(r.error,'var(--red)');}
 async function removeWallet(id){if(!confirm('Remove wallet?'))return;await api('DELETE','/wallets/'+id);loadWallets();toast('Removed','var(--amber)');}
 async function importWallet(){const pk=document.getElementById('import-pk').value.trim();const label=document.getElementById('import-label').value.trim()||'Imported';if(!pk)return toast('Enter private key','var(--red)');const r=await api('POST','/wallets/import',{privateKey:pk,label,type:'trader'});if(r.success){toast('Imported ✓','var(--green)');document.getElementById('import-pk').value='';loadWallets();}else toast(r.error,'var(--red)');}
 async function loadDeployer(){const r=await api('GET','/deployer/status');if(!r.success)return;const d=r.data;document.getElementById('ov-deployed').textContent=d.deployLog?d.deployLog.filter(x=>x.status!=='failed').length:0;const dl=document.getElementById('deploy-log');if(d.deployLog&&d.deployLog.length){dl.innerHTML=d.deployLog.slice(0,20).map(e=>`<div style="padding:8px 0;border-bottom:1px solid var(--border)"><div class="row sb"><span class="mono" style="font-size:12px">${e.token?.ticker?'$'+e.token.ticker:'Unknown'}</span><span class="tag ${e.simulated?'sim':e.status==='deployed'?'buy':'sell'}">${e.simulated?'SIM':e.status?.toUpperCase()}</span><span class="muted" style="font-size:11px">${new Date(e.timestamp).toLocaleTimeString()}</span></div>${e.tweet?`<div class="muted" style="font-size:11px;margin-top:4px">@${e.tweet.username}: ${e.tweet.text?.slice(0,60)}...</div>`:''}</div>`).join('');}else{dl.innerHTML='<div class="muted" style="font-size:12px;text-align:center;padding:16px">No deploys yet</div>';}}
 async function saveDeployerConfig(){const r=await api('POST','/deployer/config',{bundleSol:parseFloat(document.getElementById('bundle-sol').value),bundleWalletCount:parseInt(document.getElementById('bundle-wallets').value),bundleSupplyPct:parseInt(document.getElementById('bundle-pct').value)});if(r.success)toast('Saved ✓','var(--green)');}
-function updateBundlePreview(){
-  const sol=parseFloat(document.getElementById('bundle-sol').value),count=parseInt(document.getElementById('bundle-wallets').value),pct=parseInt(document.getElementById('bundle-pct').value);
-  document.getElementById('bundle-sol-val').textContent=sol+' SOL';document.getElementById('bundle-wallets-val').textContent=count;document.getElementById('bundle-pct-val').textContent=pct+'%';
-  let amounts=[],rem=sol;
-  for(let i=0;i<count-1;i++){const max=rem-(count-i-1)*0.01;const val=Math.round((Math.random()*(max-0.01)+0.01)*1000)/1000;amounts.push(val);rem=Math.round((rem-val)*1000)/1000;}
-  amounts.push(rem);amounts.sort(()=>Math.random()-.5);
-  document.getElementById('bundle-preview').innerHTML=amounts.map((a,i)=>`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><span class="mono muted" style="font-size:11px;min-width:70px">Wallet ${i+1}</span><div style="flex:1"><div class="pbar"><div class="pbar-fill" style="width:${(a/sol*100).toFixed(0)}%;background:var(--accent)"></div></div></div><span class="mono" style="font-size:12px;min-width:55px;text-align:right">${a.toFixed(3)} SOL</span></div>`).join('');
-}
+function updateBundlePreview(){const sol=parseFloat(document.getElementById('bundle-sol').value),count=parseInt(document.getElementById('bundle-wallets').value),pct=parseInt(document.getElementById('bundle-pct').value);document.getElementById('bundle-sol-val').textContent=sol+' SOL';document.getElementById('bundle-wallets-val').textContent=count;document.getElementById('bundle-pct-val').textContent=pct+'%';let amounts=[],rem=sol;for(let i=0;i<count-1;i++){const max=rem-(count-i-1)*0.01;const val=Math.round((Math.random()*(max-0.01)+0.01)*1000)/1000;amounts.push(val);rem=Math.round((rem-val)*1000)/1000;}amounts.push(rem);amounts.sort(()=>Math.random()-.5);document.getElementById('bundle-preview').innerHTML=amounts.map((a,i)=>`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><span class="mono muted" style="font-size:11px;min-width:70px">Wallet ${i+1}</span><div style="flex:1"><div class="pbar"><div class="pbar-fill" style="width:${(a/sol*100).toFixed(0)}%;background:var(--accent)"></div></div></div><span class="mono" style="font-size:12px;min-width:55px;text-align:right">${a.toFixed(3)} SOL</span></div>`).join('');}
 async function loadHistory(){const r=await api('GET','/trader/status');if(!r.success)return;allTrades=r.data.recentTrades||[];renderHistory(allTrades);if(allTrades.length){document.getElementById('hist-total').textContent=allTrades.length;const best=Math.max(...allTrades.map(t=>t.pnlSol));const worst=Math.min(...allTrades.map(t=>t.pnlSol));document.getElementById('hist-best').textContent='+'+best.toFixed(4)+' SOL';document.getElementById('hist-worst').textContent=worst.toFixed(4)+' SOL';}}
 function filterHistory(type){renderHistory(type==='all'?allTrades:allTrades.filter(t=>t.result===type));}
-function renderHistory(trades){const tb=document.getElementById('history-rows');if(!trades.length){tb.innerHTML='<tr><td colspan="9" class="muted" style="text-align:center;padding:20px">No trades</td></tr>';return;}tb.innerHTML=trades.map(t=>`<tr><td class="mono muted" style="font-size:11px">${new Date(t.timestamp).toLocaleTimeString()}</td><td class="mono bold">$${t.ticker}</td><td><span class="tag ${t.platform}">${t.platform}</span></td><td class="muted">${t.walletLabel||''}</td><td class="mono ${t.pnlSol>=0?'green':'red'}">${t.pnlSol>=0?'+':''}${t.pnlSol} SOL</td><td class="mono ${t.pnlPct>=0?'green':'red'}">${t.pnlPct>=0?'+':''}${t.pnlPct}%</td><td><div class="score-ring ${t.aiScore>=80?'score-high':t.aiScore>=65?'score-med':'score-low'}" style="width:26px;height:26px;font-size:10px">${t.aiScore}</div></td><td class="mono muted">${t.holdTimeSeconds}s</td><td><span class="tag ${t.result==='win'?'buy':'sell'}">${t.result?.toUpperCase()}</span></td></tr>`).join('');}
+function renderHistory(trades){
+  const tb=document.getElementById('history-rows');
+  if(!trades.length){tb.innerHTML='<tr><td colspan="11" class="muted" style="text-align:center;padding:20px">No trades yet</td></tr>';return;}
+  tb.innerHTML=trades.map(t=>`<tr>
+    <td class="mono muted" style="font-size:11px">${new Date(t.timestamp).toLocaleTimeString()}</td>
+    <td class="ca-cell" onclick="copyCA('${t.mintAddress||''}')">
+      <div class="mono bold">$${t.ticker}</div>
+      <div class="ca-text">${t.mintAddress||'pending'}</div>
+    </td>
+    <td><span class="tag ${t.platform}">${t.platform}</span></td>
+    <td class="muted" style="font-size:11px">${t.walletLabel||''}</td>
+    <td class="mono" style="font-size:11px">$${t.entryPrice?.toFixed(8)||'—'}</td>
+    <td class="mono" style="font-size:11px">$${t.exitPrice?.toFixed(8)||'—'}</td>
+    <td class="mono ${t.pnlSol>=0?'green':'red'}">${t.pnlSol>=0?'+':''}${t.pnlSol} SOL</td>
+    <td class="mono ${t.pnlPct>=0?'green':'red'}">${t.pnlPct>=0?'+':''}${t.pnlPct}%</td>
+    <td><div class="score-ring ${t.aiScore>=80?'score-high':t.aiScore>=65?'score-med':'score-low'}" style="width:26px;height:26px;font-size:10px">${t.aiScore}</div></td>
+    <td class="mono muted">${t.holdTimeSeconds}s</td>
+    <td><span class="tag ${t.result==='win'?'buy':'sell'}">${t.result?.toUpperCase()}</span></td>
+  </tr>`).join('');
+}
 async function loadAI(){const r=await api('GET','/trainer/stats');if(!r.success)return;const d=r.data;document.getElementById('ai-samples').textContent=d.samples;document.getElementById('ai-wins').textContent=d.wins;document.getElementById('ai-losses').textContent=d.losses;document.getElementById('ai-wr').textContent=d.winRate+'%';document.getElementById('ai-last').textContent=d.lastTrained?new Date(d.lastTrained).toLocaleString():'Never';if(d.weights){document.getElementById('ai-weights').innerHTML=Object.entries(d.weights).map(([k,v])=>`<div class="mb8"><div class="row sb mb4"><span style="font-size:12px">${k.replace(/_/g,' ')}</span><span class="mono" style="font-size:12px">${parseFloat(v).toFixed(2)}</span></div><div class="pbar"><div class="pbar-fill" style="width:${Math.min(100,v*50)}%;background:var(--accent)"></div></div></div>`).join('');}}
 async function forceRetrain(){const r=await api('POST','/trainer/retrain');if(r.success){toast('Retrain complete ✓','var(--green)');loadAI();}}
 async function resetWeights(){if(!confirm('Reset weights?'))return;await api('POST','/trainer/reset');toast('Reset ✓','var(--amber)');loadAI();}
-async function toggleLiveMode(){const t=document.getElementById('live-toggle');const on=!t.classList.contains('on');if(on&&!confirm('⚠️ Enable LIVE mode? Real SOL will be used.'))return;t.classList.toggle('on',on);document.getElementById('live-mode-tag').textContent=on?'LIVE MODE':'SIMULATION';document.getElementById('live-mode-tag').className='tag ml-auto '+(on?'live':'sim');document.getElementById('chip-mode').className='chip '+(on?'red':'amber');document.getElementById('chip-mode').innerHTML=on?'<i class="ti ti-flame"></i> LIVE MODE':'<i class="ti ti-flask"></i> SIM MODE';await api('PATCH','/trader/config',{liveMode:on});toast(on?'🔴 LIVE MODE — real SOL at risk':'Simulation mode','on'?'var(--red)':'var(--green)');}
+async function toggleLiveMode(){const t=document.getElementById('live-toggle');const on=!t.classList.contains('on');if(on&&!confirm('⚠️ Enable LIVE mode? Real SOL will be used.'))return;t.classList.toggle('on',on);document.getElementById('live-mode-tag').textContent=on?'LIVE MODE':'SIMULATION';document.getElementById('live-mode-tag').className='tag ml-auto '+(on?'live':'sim');document.getElementById('chip-mode').className='chip '+(on?'red':'amber');document.getElementById('chip-mode').innerHTML=on?'<i class="ti ti-flame"></i> LIVE MODE':'<i class="ti ti-flask"></i> SIM MODE';await api('PATCH','/trader/config',{liveMode:on});toast(on?'🔴 LIVE MODE — real SOL at risk':'Simulation mode',on?'var(--red)':'var(--green)');}
 async function testConnection(){const r=await api('GET','/health');if(r.success)toast('Connected ✓','var(--green)');else toast('Failed','var(--red)');}
 const feedIcons=['🐸','🚀','💰','🦊','🌭','⚡','🎯','💎'];
 const platforms=['pumpfun','bonkfun','bagsfm'];

@@ -137,7 +137,7 @@ function scheduleSimExit(wallet, position) {
       pnlPct: Math.round((multiplier - 1) * 10000) / 100,
       holdTimeSeconds: Math.round(holdMs / 1000),
       aiScore: position.aiScore,
-      result: pnlSol > 0 ? 'win' : 'loss', simulated: true,
+      result: pnlSol > 0 ? 'win' : 'loss', simulated: true, mintAddress: position.mintAddress, entryMcap: position.marketCap || 0, exitMcap: position.marketCap ? position.marketCap * multiplier : 0, mintAddress: position.mintAddress,
     };
     traderState.trades.unshift(trade);
     if (traderState.trades.length > 500) traderState.trades.pop();
