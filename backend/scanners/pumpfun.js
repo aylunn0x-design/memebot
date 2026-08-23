@@ -5,6 +5,10 @@ let ws = null;
 let callbacks = [];
 let reconnectTimer = null;
 let running = false;
+let mode = 'stopped';
+
+function clearCallbacks() { callbacks = []; }
+function getStatus() { return { running, mode }; }
 
 const PUMP_WS = 'wss://pumpportal.fun/api/data';
 
@@ -32,6 +36,7 @@ function connect() {
   ws = new WebSocket(PUMP_WS);
   ws.on('open', () => {
     console.log('[PumpFun] Connected');
+    mode = 'websocket';
     ws.send(JSON.stringify({ method: 'subscribeNewToken' }));
     ws.send(JSON.stringify({ method: 'subscribeMigration' }));
   });
@@ -63,6 +68,7 @@ async function pollFinalStretch() {
 function start() {
   if (running) return;
   running = true;
+  mode = 'starting';
   connect();
   setTimeout(pollFinalStretch, 5000);
   console.log('[PumpFun] Scanner started');
@@ -70,9 +76,10 @@ function start() {
 
 function stop() {
   running = false;
+  mode = 'stopped';
   if (ws) { ws.close(); ws = null; }
   if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
   console.log('[PumpFun] Scanner stopped');
 }
 
-module.exports = { start, stop, onCoin };
+module.exports = { start, stop, onCoin, clearCallbacks, getStatus };

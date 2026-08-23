@@ -121,6 +121,10 @@ app.patch('/api/trader/config', (req, res) => {
   res.json({ success: true, data: trader.updateConfig(req.body) });
 });
 
+app.get('/api/trader/feed', (req, res) => {
+  res.json({ success: true, data: trader.getFeed() });
+});
+
 app.get('/api/market', (req, res) => {
   res.json({ success: true, data: market.getState() });
 });

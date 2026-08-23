@@ -68,7 +68,10 @@ async function deploy(signal, liveMode = false) {
     bundleSupplyPct: deployerState.bundleSupplyPct,
   };
   if (!liveMode) return await simulateDeploy(signal, config);
-  // Live deploy placeholder
+  // TODO: Real deployment requires Metaplex metadata upload, bonding curve
+  // interaction, bundled buys via Jito, and proper error handling/rollback.
+  // NEVER enable live mode until WR > 60% over 200+ trades.
+  console.log('[Deployer] WARNING: Live deploy not implemented — falling through to simulation');
   return await simulateDeploy(signal, config);
 }
 

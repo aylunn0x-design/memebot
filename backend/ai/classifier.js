@@ -32,7 +32,6 @@ Rules: deployable true only if score>=75. platform is bonkfun for politics/elect
 }
 
 async function scoreCoin(coinData) {
-  // If no API key, use rule-based scoring
   if (!process.env.ANTHROPIC_API_KEY) {
     return ruleBasedScore(coinData);
   }
@@ -63,23 +62,55 @@ Rules: buy true only if score>=70. Never buy if dev wallet>15% or top holders>60
 }
 
 function ruleBasedScore(coinData) {
-  let score = 50;
-  if (coinData.hasTwitter) score += 10;
-  if (coinData.hasWebsite) score += 8;
-  if (coinData.stage === 'finalstretch') score += 12;
-  if (coinData.stage === 'new') score += 5;
-  if (coinData.devWalletPct && parseFloat(coinData.devWalletPct) > 15) score -= 30;
-  if (coinData.top10HoldersPct && parseFloat(coinData.top10HoldersPct) > 60) score -= 20;
-  if (coinData.liquiditySOL && parseFloat(coinData.liquiditySOL) > 10) score += 10;
-  if (coinData.ticker && coinData.ticker.length <= 5) score += 5;
+  let score = 25;
+  const red_flags = [];
+
+  if (coinData.hasTwitter) score += 8;
+  if (coinData.hasWebsite) score += 6;
+  if (coinData.hasTwitter && coinData.hasWebsite) score += 5;
+
+  if (coinData.stage === 'finalstretch') score += 15;
+  else if (coinData.stage === 'migrated') score += 8;
+  else if (coinData.stage === 'new') score += 3;
+
+  const liq = parseFloat(coinData.liquiditySOL) || 0;
+  if (liq > 10) score += 8;
+  else if (liq > 5) score += 4;
+  else if (liq < 3 && liq > 0) { score -= 15; red_flags.push('Very low liquidity'); }
+  if (!liq) { score -= 10; red_flags.push('No liquidity data'); }
+
+  const vol = parseFloat(coinData.volume5m) || 0;
+  if (vol > 0) score += 3;
+  else { score -= 5; red_flags.push('Zero volume'); }
+
+  if (coinData.ticker && coinData.ticker.length <= 5) score += 3;
+  if (!coinData.ticker || !coinData.name) { score -= 10; red_flags.push('Missing ticker or name'); }
+
+  const mcap = parseFloat(coinData.marketCap) || 0;
+  if (mcap > 50000) score += 5;
+
+  if (coinData.devWalletPct && parseFloat(coinData.devWalletPct) > 15) {
+    score -= 30;
+    red_flags.push('Dev wallet too high');
+  }
+  if (coinData.top10HoldersPct && parseFloat(coinData.top10HoldersPct) > 60) {
+    score -= 20;
+    red_flags.push('Top holders too concentrated');
+  }
+
+  if (!coinData.hasTwitter && !coinData.hasWebsite) {
+    score -= 10;
+    red_flags.push('No social presence');
+  }
+
   score = Math.max(0, Math.min(100, score));
   return {
     score,
     buy: score >= 70,
-    reason: 'Rule-based score (no API key)',
+    reason: `Rule-based: ${score >= 70 ? 'Buy signal' : 'Below threshold'} (no API key)`,
     risk_level: score >= 75 ? 'low' : score >= 60 ? 'medium' : 'high',
-    suggested_position_sol: score >= 80 ? 0.8 : 0.4,
-    red_flags: [],
+    suggested_position_sol: score >= 80 ? 0.8 : score >= 70 ? 0.5 : 0.3,
+    red_flags,
   };
 }
 
